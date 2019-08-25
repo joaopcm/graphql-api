@@ -1,0 +1,16 @@
+version: "3"
+services:
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - database:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_USER=default
+      - MYSQL_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=default
+      - TZ=America/Sao_Paulo
+volumes:
+  database:
