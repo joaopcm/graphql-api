@@ -1,4 +1,3 @@
-import { GraphQLResolveInfo } from "graphql";
 import { Transaction } from "sequelize";
 
 import { CommentInstance } from "../../../models/CommentModel";
@@ -8,25 +7,29 @@ import { AuthUser } from "../../../interfaces/AuthUserInterface";
 import { authResolvers } from "../../composable/auth.resolver";
 import { compose } from "../../composable/composable.resolver";
 import { handleError, throwError } from "../../../utils/utils";
+import { DataLoaders } from "../../../interfaces/DataLoadersInterface";
+import { GraphQLResolveInfo } from "graphql";
+import { RequestedFields } from "../../ast/RequestedFields";
 
 export const commentResolvers = {
   Comment: {
-    user: (comment: CommentInstance, args, { database }: { database: DbConnection }) => {
-      return database.User.findById(comment.get('user')).catch(handleError)
+    user: (comment: CommentInstance, args, { dataloaders: { userLoader } }: { dataloaders: DataLoaders}, info: GraphQLResolveInfo) => {
+      return userLoader.load({ key: comment.get('user'), info }).catch(handleError)
     },
 
-    post: (comment: CommentInstance, args, { database }: { database: DbConnection }) => {
-      return database.Post.findById(comment.get('post')).catch(handleError)
+    post: (comment: CommentInstance, args, { dataloaders: { postLoader } }: { dataloaders: DataLoaders}, info: GraphQLResolveInfo) => {
+      return postLoader.load({ key: comment.get('post'), info }).catch(handleError)
     }
   },
   Query: {
-    commentsByPost: compose(...authResolvers)((parent, { postId, first = 10, offset = 0 }, { database }: { database: DbConnection }) => {
+    commentsByPost: compose(...authResolvers)((parent, { postId, first = 10, offset = 0 }, { database, requestedFields }: { database: DbConnection, requestedFields: RequestedFields }, info: GraphQLResolveInfo) => {
       postId = parseInt(postId)
 
       return database.Comment.findAll({
         where: { post: postId },
         limit: first,
-        offset
+        offset,
+        attributes: requestedFields.getFields(info)
       }).catch(handleError)
     })
   },
